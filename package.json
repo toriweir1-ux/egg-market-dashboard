@@ -1,0 +1,17 @@
+{
+  "name": "egg-market-dashboard",
+  "version": "1.0.0",
+  "description": "Public USDA egg market dashboard: layer flock, cage-free inventory, egg production, prices, and avian influenza data, sourced from USDA NASS and APHIS.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "verify:nass": "node scripts/verify-nass-series.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

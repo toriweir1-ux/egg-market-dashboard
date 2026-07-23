@@ -1,0 +1,571 @@
+:root {
+  color-scheme: light;
+
+  --page-bg: #fbf3e6;
+  --surface-1: #fffdf9;
+  --surface-2: #fff9ee;
+  --border: rgba(16, 35, 59, 0.10);
+
+  --text-primary: #10233b;
+  --text-secondary: #5b5648;
+  --text-muted: #8a8578;
+
+  --gridline: #ece4d3;
+  --baseline: #cabfa8;
+
+  --accent: #eb6834;
+  --accent-ink: #b84d21;
+  --sequential: #2a78d6;
+  --context: #9c8f72;
+  --context-ink: #7d735c;
+
+  --good: #0ca30c;
+  --critical: #d03b3b;
+
+  --sidebar-bg: #fdf8ee;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page-bg: #17130f;
+    --surface-1: #201a14;
+    --surface-2: #251e17;
+    --border: rgba(255, 255, 255, 0.10);
+
+    --text-primary: #ffffff;
+    --text-secondary: #cbc2b0;
+    --text-muted: #948a76;
+
+    --gridline: #342c22;
+    --baseline: #4a4030;
+
+    --accent: #f0813f;
+    --accent-ink: #f6a06c;
+    --sequential: #3987e5;
+    --context: #786b4f;
+    --context-ink: #9c8f72;
+
+    --good: #4fd24f;
+    --critical: #e66767;
+
+    --sidebar-bg: #1b1610;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page-bg: #17130f;
+  --surface-1: #201a14;
+  --surface-2: #251e17;
+  --border: rgba(255, 255, 255, 0.10);
+
+  --text-primary: #ffffff;
+  --text-secondary: #cbc2b0;
+  --text-muted: #948a76;
+
+  --gridline: #342c22;
+  --baseline: #4a4030;
+
+  --accent: #f0813f;
+  --accent-ink: #f6a06c;
+  --sequential: #3987e5;
+  --context: #786b4f;
+  --context-ink: #9c8f72;
+
+  --good: #4fd24f;
+  --critical: #e66767;
+
+  --sidebar-bg: #1b1610;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+.usda-app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------------- Sidebar ---------------- */
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.brand-mark {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.brand-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.brand-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.nav-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 16px 0 4px;
+  padding: 0 10px;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: var(--surface-2);
+}
+
+.nav-item.active {
+  background: var(--surface-2);
+  color: var(--accent-ink);
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.usda-last-updated {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.usda-refresh-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.usda-refresh-btn:hover {
+  background: var(--gridline);
+}
+
+/* ---------------- Content ---------------- */
+
+.content {
+  flex: 1;
+  padding: 32px 40px 64px;
+  max-width: 1000px;
+}
+
+.config-banner {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.config-banner a {
+  color: var(--accent-ink);
+}
+
+.usda-section[hidden] {
+  display: none;
+}
+
+.section-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  margin: 0 0 24px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  max-width: 640px;
+}
+
+/* ---------------- Stat tiles ---------------- */
+
+.stat-tile-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.stat-tile {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+.stat-tile-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.stat-tile-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-tile-unavailable {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.stat-tile-delta {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.delta-up {
+  color: var(--good);
+}
+
+.delta-down {
+  color: var(--critical);
+}
+
+/* ---------------- Chart cards ---------------- */
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.chart-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px 16px;
+  margin: 0;
+}
+
+.chart-card-head h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.chart-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.chart-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 4px;
+}
+
+.table-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.table-toggle-btn:hover {
+  background: var(--surface-2);
+}
+
+.chart-mount[hidden],
+.chart-table-mount[hidden] {
+  display: none;
+}
+
+.chart-caption {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.chart-caption a {
+  color: var(--text-muted);
+}
+
+/* SVG chart chrome */
+
+.usda-chart .grid-line {
+  stroke: var(--gridline);
+  stroke-width: 1;
+}
+
+.usda-chart .axis-label {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.usda-chart .end-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.usda-chart .line-context {
+  stroke: var(--context);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.usda-chart .line-accent {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.usda-chart .end-dot-accent {
+  fill: var(--accent);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+
+.usda-chart .crosshair {
+  stroke: var(--baseline);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.usda-chart .bar-accent {
+  fill: var(--sequential);
+}
+
+.usda-chart .bar-warning {
+  fill: var(--accent);
+}
+
+.usda-chart .bar-hover {
+  opacity: 0.8;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+}
+
+.legend-context {
+  background: var(--context);
+}
+
+.legend-accent {
+  background: var(--accent);
+}
+
+/* ---------------- Tooltip ---------------- */
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 1000;
+  background: var(--text-primary);
+  color: var(--page-bg);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  max-width: 240px;
+}
+
+.chart-tooltip-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-tooltip-key {
+  display: inline-block;
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.key-accent {
+  background: var(--accent);
+}
+
+.key-context {
+  background: var(--context);
+}
+
+.chart-tooltip-value {
+  font-weight: 700;
+}
+
+.chart-tooltip-label {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* ---------------- Table view ---------------- */
+
+.chart-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.chart-data-table th,
+.chart-data-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-data-table th {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+/* ---------------- Empty state ---------------- */
+
+.empty-state {
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.empty-state-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.empty-state-message {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.empty-state-action {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--accent-ink);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+.empty-state-action:hover {
+  background: var(--surface-2);
+}
+
+@media (max-width: 780px) {
+  .usda-app {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+  .content {
+    padding: 24px 20px 48px;
+    max-width: 100%;
+  }
+}

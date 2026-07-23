@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>USDA Egg Market Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="usda-app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">🥚</span>
+        <div class="brand-titles">
+          <span class="brand-name">USDA Egg Market Dashboard</span>
+          <span class="brand-subtitle">Layer flock, production, prices &amp; avian flu</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Dashboard sections">
+        <button class="nav-item" data-section="overview">Overview</button>
+
+        <div class="nav-group-label">Layer Flock</div>
+        <button class="nav-item" data-section="layer-flock">Flock Size &amp; Cage-Free</button>
+
+        <div class="nav-group-label">Production Figures</div>
+        <button class="nav-item" data-section="production">Egg Production</button>
+
+        <div class="nav-group-label">Prices</div>
+        <button class="nav-item" data-section="prices">Price Received</button>
+
+        <div class="nav-group-label">Avian Influenza</div>
+        <button class="nav-item" data-section="avian-influenza">HPAI Detections</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span id="usda-last-updated" class="usda-last-updated">Loading…</span>
+        <button id="usda-refresh-btn" class="usda-refresh-btn" type="button">
+          <span aria-hidden="true">⟳</span> Refresh
+        </button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div id="usda-config-banner" class="config-banner" hidden></div>
+
+      <section id="section-overview" class="usda-section" data-section="overview">
+        <header class="section-header">
+          <h1>Egg Industry Overview</h1>
+          <p class="section-subtitle">Headline figures across layer flock, production, prices, and avian influenza — sourced directly from USDA.</p>
+        </header>
+        <div id="overview-stats" class="stat-tile-row"></div>
+      </section>
+
+      <section id="section-layer-flock" class="usda-section" data-section="layer-flock" hidden>
+        <header class="section-header">
+          <h1>Layer Flock</h1>
+          <p class="section-subtitle">Table-egg layer flock size and cage-free housing composition.</p>
+        </header>
+        <div id="layer-flock-charts" class="chart-grid"></div>
+      </section>
+
+      <section id="section-production" class="usda-section" data-section="production" hidden>
+        <header class="section-header">
+          <h1>Production Figures</h1>
+          <p class="section-subtitle">Monthly U.S. egg production, compared against the same month in prior years.</p>
+        </header>
+        <div id="production-charts" class="chart-grid"></div>
+      </section>
+
+      <section id="section-prices" class="usda-section" data-section="prices" hidden>
+        <header class="section-header">
+          <h1>Prices</h1>
+          <p class="section-subtitle">Monthly average egg price received by farmers.</p>
+        </header>
+        <div id="prices-charts" class="chart-grid"></div>
+      </section>
+
+      <section id="section-avian-influenza" class="usda-section" data-section="avian-influenza" hidden>
+        <header class="section-header">
+          <h1>Avian Influenza</h1>
+          <p class="section-subtitle">Highly pathogenic avian influenza (HPAI) detections in commercial and backyard flocks.</p>
+        </header>
+        <div id="avian-influenza-charts" class="chart-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
