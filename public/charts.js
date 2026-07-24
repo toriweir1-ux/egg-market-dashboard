@@ -196,6 +196,46 @@
     return wrap;
   }
 
+  // A card for data that is genuinely not available as a live feed (no API,
+  // no exportable file) — explains why and links to where a human can look
+  // it up manually, instead of pretending it's a broken chart.
+  function buildInfoCard({ title, subtitle, message, actionLabel, actionHref, sourceLabel, sourceHref }) {
+    const card = document.createElement('figure');
+    card.className = 'chart-card';
+
+    const head = document.createElement('div');
+    head.className = 'chart-card-head';
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    head.appendChild(h3);
+    if (subtitle) {
+      const sub = document.createElement('p');
+      sub.className = 'chart-subtitle';
+      sub.textContent = subtitle;
+      head.appendChild(sub);
+    }
+    card.appendChild(head);
+    card.appendChild(buildEmptyState({ title: 'Not available as a live feed', message, actionLabel, actionHref }));
+
+    if (sourceLabel) {
+      const caption = document.createElement('figcaption');
+      caption.className = 'chart-caption';
+      if (sourceHref) {
+        caption.append(document.createTextNode('Source: '));
+        const a = document.createElement('a');
+        a.href = sourceHref;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = sourceLabel;
+        caption.appendChild(a);
+      } else {
+        caption.textContent = `Source: ${sourceLabel}`;
+      }
+      card.appendChild(caption);
+    }
+    return card;
+  }
+
   function legendItem(colorClass, label) {
     const item = document.createElement('span');
     item.className = 'legend-item';
@@ -541,6 +581,7 @@
 
   global.UsdaCharts = {
     buildCard,
+    buildInfoCard,
     buildTable,
     buildEmptyState,
     renderSeasonalChart,
