@@ -40,18 +40,32 @@ app.get('/api/usda/debug', async (req, res) => {
     }
   }
 
-  // CONFIRMED: "CHICKENS, LAYERS - INVENTORY" only exists as freq ANNUAL or
-  // POINT IN TIME (quarterly snapshots) — never MONTHLY. That's the whole
-  // bug. USDA's monthly "average number of layers during the month" figure
-  // is very likely a different short_desc — test that one directly.
-  const AVG_SD = 'CHICKENS, LAYERS - INVENTORY, AVG, MEASURED IN HEAD';
+  // Layer flock series is now confirmed and fixed in lib/config.js. Last
+  // remaining question: does NASS Quick Stats publish cage-free data at
+  // all? Search broadly (not filtered to class_desc=LAYERS, in case it's
+  // filed under a different class) rather than guessing a specific combo.
+  try {
+    const allChickenShortDesc = await nass.discoverParamValues('short_desc', { commodity_desc: 'CHICKENS' });
+    const cageFreeMatches = allChickenShortDesc.filter((v) => /cage.?free/i.test(v));
+    results.cageFree_shortDesc_matches = { count: cageFreeMatches.length, matches: cageFreeMatches };
+  } catch (err) {
+    results.cageFree_shortDesc_matches_error = err.message;
+  }
 
-  await tryDiscover('freq_desc_options_for_avg_series', 'freq_desc', { short_desc: AVG_SD });
-  await tryDiscover('agg_level_desc_options_for_avg_series', 'agg_level_desc', { short_desc: AVG_SD });
+  try {
+    const practices = await nass.discoverParamValues('prodn_practice_desc', { commodity_desc: 'CHICKENS' });
+    results.cageFree_prodn_practice_options = practices;
+  } catch (err) {
+    results.cageFree_prodn_practice_options_error = err.message;
+  }
 
-  await tryQuery('K_avgSeries_monthly_national', {
-    short_desc: AVG_SD, freq_desc: 'MONTHLY', agg_level_desc: 'NATIONAL', year__GE: thisYear - 2,
-  });
+  try {
+    const eggShortDesc = await nass.discoverParamValues('short_desc', { commodity_desc: 'EGGS' });
+    const cageFreeEggMatches = eggShortDesc.filter((v) => /cage.?free/i.test(v));
+    results.cageFree_eggs_shortDesc_matches = { count: cageFreeEggMatches.length, matches: cageFreeEggMatches };
+  } catch (err) {
+    results.cageFree_eggs_shortDesc_matches_error = err.message;
+  }
 
   res.json(results);
 });
