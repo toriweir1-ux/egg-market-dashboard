@@ -1,13 +1,14 @@
 (function () {
   const {
     buildCard, buildInfoCard, buildTable, buildEmptyState,
-    renderSeasonalChart, renderTrendChart, renderStatTile, MONTHS,
+    renderSeasonalChart, renderTrendChart, renderBarChart, renderStatTile, MONTHS,
   } = window.UsdaCharts;
 
   const NASS_KEY_SIGNUP_URL = 'https://quickstats.nass.usda.gov/api';
   const NASS_SOURCE_URL = 'https://quickstats.nass.usda.gov/';
   const NASS_SOURCE_LABEL = 'USDA NASS Quick Stats';
   const APHIS_DASHBOARD_URL = 'https://www.aphis.usda.gov/livestock-poultry-disease/avian/avian-influenza/hpai-detections/commercial-backyard-flocks';
+  const APHIS_SOURCE_LABEL = 'USDA APHIS — HPAI Commercial & Backyard Flock Detections';
   const NASS_CHICKENS_AND_EGGS_REPORT_URL = 'https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Chickens_and_Eggs/index.php';
 
   let state = null;
@@ -160,6 +161,26 @@
     return card;
   }
 
+  function buildBarCard({ title, subtitle, points, formatValue, valueColumnLabel }) {
+    const { card, chartMount, tableMount } = buildCard({
+      title, subtitle, sourceLabel: APHIS_SOURCE_LABEL, sourceHref: APHIS_DASHBOARD_URL,
+    });
+    if (!points || points.length === 0) {
+      chartMount.appendChild(buildEmptyState({
+        title: 'Data unavailable',
+        message: 'No data returned yet.',
+        actionLabel: "View APHIS's HPAI dashboard",
+        actionHref: APHIS_DASHBOARD_URL,
+      }));
+      return card;
+    }
+    renderBarChart(chartMount, { points, formatValue, formatDate: formatShortMonth, colorClass: 'bar-accent', ariaLabel: title });
+    const headers = ['Month', valueColumnLabel || 'Value'];
+    const rows = points.map((p) => [formatMonthLabel(p.date), p.value == null ? '—' : formatValue(p.value)]);
+    buildTable(tableMount, headers, rows);
+    return card;
+  }
+
   // ---- section renderers --------------------------------------------------------
   function renderOverview() {
     const container = document.getElementById('overview-stats');
@@ -192,6 +213,15 @@
       deltaText: price && yoyText(price.yoy),
       deltaDirection: price && yoyDirection(price.yoy),
       unavailable: !price || !!price.error || !price.latest,
+    });
+
+    const avian = state.avianInfluenza;
+    const last12 = avian && !avian.error ? avian.monthly.slice(-12) : [];
+    const birdsAffected12mo = last12.reduce((sum, m) => sum + (m.birdsAffected || 0), 0);
+    renderStatTile(container, {
+      label: 'Birds Affected by HPAI (trailing 12 mo., approx.)',
+      value: last12.length ? formatCompact(birdsAffected12mo, 'birds') : null,
+      unavailable: !avian || !!avian.error || last12.length === 0,
     });
   }
 
@@ -242,13 +272,23 @@
   function renderAvianInfluenzaSection() {
     const container = document.getElementById('avian-influenza-charts');
     container.innerHTML = '';
+    const avian = state.avianInfluenza;
+    const monthly = avian && !avian.error ? avian.monthly : [];
 
-    container.appendChild(buildInfoCard({
+    container.appendChild(buildBarCard({
       title: 'HPAI Detections in Commercial & Backyard Flocks',
-      subtitle: 'Confirmed detections and estimated birds affected',
-      message: "USDA APHIS's HPAI detections page only offers PDF and PowerPoint exports — no CSV, spreadsheet, or API — so this can't be pulled into a live chart. View APHIS's own dashboard for current detection counts and maps.",
-      actionLabel: "View APHIS's HPAI dashboard",
-      actionHref: APHIS_DASHBOARD_URL,
+      subtitle: 'Confirmed detections per month',
+      points: monthly.map((m) => ({ date: m.date, value: m.detections })),
+      formatValue: (v) => formatCompact(v),
+      valueColumnLabel: 'Detections',
+    }));
+
+    container.appendChild(buildBarCard({
+      title: 'Birds Affected by HPAI',
+      subtitle: 'Estimated birds affected per month (approximate — USDA’s export rounds each detection to the nearest 100K)',
+      points: monthly.map((m) => ({ date: m.date, value: m.birdsAffected })),
+      formatValue: (v) => formatCompact(v, 'birds'),
+      valueColumnLabel: 'Birds affected (approx.)',
     }));
   }
 
