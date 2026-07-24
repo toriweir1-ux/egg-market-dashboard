@@ -40,28 +40,18 @@ app.get('/api/usda/debug', async (req, res) => {
     }
   }
 
-  const SD = 'CHICKENS, LAYERS - INVENTORY';
+  // CONFIRMED: "CHICKENS, LAYERS - INVENTORY" only exists as freq ANNUAL or
+  // POINT IN TIME (quarterly snapshots) — never MONTHLY. That's the whole
+  // bug. USDA's monthly "average number of layers during the month" figure
+  // is very likely a different short_desc — test that one directly.
+  const AVG_SD = 'CHICKENS, LAYERS - INVENTORY, AVG, MEASURED IN HEAD';
 
-  // We know: {short_desc: SD} ALONE returns 413 "exceeds limit" (so the
-  // short_desc value itself is valid and matches real rows). Adding BOTH
-  // freq_desc=MONTHLY and agg_level_desc=NATIONAL together turns that into
-  // a 400 "invalid query" — even though that exact freq/agg combo works
-  // fine for the EGGS series. So: does this series even have MONTHLY /
-  // NATIONAL rows at all? Ask NASS directly instead of guessing further.
-  await tryDiscover('agg_level_desc_options_for_this_series', 'agg_level_desc', {
-    commodity_desc: 'CHICKENS', class_desc: 'LAYERS', statisticcat_desc: 'INVENTORY',
+  await tryDiscover('freq_desc_options_for_avg_series', 'freq_desc', { short_desc: AVG_SD });
+  await tryDiscover('agg_level_desc_options_for_avg_series', 'agg_level_desc', { short_desc: AVG_SD });
+
+  await tryQuery('K_avgSeries_monthly_national', {
+    short_desc: AVG_SD, freq_desc: 'MONTHLY', agg_level_desc: 'NATIONAL', year__GE: thisYear - 2,
   });
-  await tryDiscover('freq_desc_options_for_this_series', 'freq_desc', {
-    commodity_desc: 'CHICKENS', class_desc: 'LAYERS', statisticcat_desc: 'INVENTORY',
-  });
-
-  // Isolate freq_desc and agg_level_desc individually against short_desc.
-  await tryQuery('H_shortDesc_plus_freq_only', { short_desc: SD, freq_desc: 'MONTHLY' });
-  await tryQuery('I_shortDesc_plus_agg_only', { short_desc: SD, agg_level_desc: 'NATIONAL' });
-
-  // Alternate way of asking for the national total, in case agg_level_desc
-  // isn't the right filter for this series.
-  await tryQuery('J_shortDesc_plus_state_alpha_US', { short_desc: SD, state_alpha: 'US' });
 
   res.json(results);
 });
