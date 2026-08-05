@@ -2,10 +2,20 @@ require('dotenv').config();
 
 const path = require('path');
 const express = require('express');
+const AdmZip = require('adm-zip');
 const cache = require('./lib/cache');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Express 4 does not catch a rejected promise thrown by an async route
+// handler — by default Node treats that as fatal and kills the whole
+// process (which is what took the live site down: a bug in one diagnostic
+// route crashed every visitor's request, not just that one). Log instead of
+// crashing, so a bug in one route can never take the rest of the site down.
+process.on('unhandledRejection', (err) => {
+  console.error('[server] Unhandled rejection (request failed, server stayed up):', err);
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -76,7 +86,6 @@ app.get('/api/usda/debug-fas', async (req, res) => {
 // entry names, headers, and egg-related rows before building the real
 // client, rather than guessing the column layout.
 app.get('/api/usda/debug-ers', async (req, res) => {
-  const AdmZip = require('adm-zip');
   const url = 'https://www.ers.usda.gov/media/5615/zip-file-contains-two-csv-files-one-with-export-data-and-one-with-import-data-files-include-monthly-and-annual-data-for-live-cattle-hogs-sheep-and-goats-as-well-as-beef-and-veal-pork-lamb-and-mutton-chicken-meat-turkey-meat-and-eggs.zip?v=40280';
 
   function splitCsvLine(line) {
