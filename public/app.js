@@ -1,7 +1,7 @@
 (function () {
   const {
     buildCard, buildInfoCard, buildTable, buildEmptyState,
-    renderSeasonalChart, renderTrendChart, renderBarChart, renderStatTile, MONTHS,
+    renderSeasonalChart, renderTrendChart, renderBarChart, renderRankedBarChart, renderStatTile, MONTHS,
   } = window.UsdaCharts;
 
   const NASS_KEY_SIGNUP_URL = 'https://quickstats.nass.usda.gov/api';
@@ -181,6 +181,26 @@
     return card;
   }
 
+  function buildRankedBarCard({ title, subtitle, items, getLabel, getValue, formatValue, valueColumnLabel, limit }) {
+    const { card, chartMount, tableMount } = buildCard({
+      title, subtitle, sourceLabel: APHIS_SOURCE_LABEL, sourceHref: APHIS_DASHBOARD_URL,
+    });
+    if (!items || items.length === 0) {
+      chartMount.appendChild(buildEmptyState({
+        title: 'Data unavailable',
+        message: 'No data returned yet.',
+        actionLabel: "View APHIS's HPAI dashboard",
+        actionHref: APHIS_DASHBOARD_URL,
+      }));
+      return card;
+    }
+    renderRankedBarChart(chartMount, { items, getLabel, getValue, formatValue, limit, ariaLabel: title });
+    const headers = ['State', valueColumnLabel || 'Value'];
+    const rows = items.map((it) => [getLabel(it), formatValue(getValue(it))]);
+    buildTable(tableMount, headers, rows);
+    return card;
+  }
+
   // ---- section renderers --------------------------------------------------------
   function renderOverview() {
     const container = document.getElementById('overview-stats');
@@ -289,6 +309,18 @@
       points: monthly.map((m) => ({ date: m.date, value: m.birdsAffected })),
       formatValue: (v) => formatCompact(v, 'birds'),
       valueColumnLabel: 'Birds affected (approx.)',
+    }));
+
+    const byState = avian && !avian.error ? avian.byState : [];
+    container.appendChild(buildRankedBarCard({
+      title: 'HPAI Detections by State',
+      subtitle: 'Confirmed detections since February 2022, all-time total by state (top 15 shown — full ranking in the data table)',
+      items: byState,
+      getLabel: (it) => it.state,
+      getValue: (it) => it.detections,
+      formatValue: (v) => formatCompact(v),
+      valueColumnLabel: 'Detections',
+      limit: 15,
     }));
   }
 

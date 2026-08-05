@@ -550,6 +550,64 @@
     mount.appendChild(svg);
   }
 
+  // ---- ranked horizontal bar chart (e.g. top states by magnitude) ----------------
+  function renderRankedBarChart(mount, { items, getLabel, getValue, formatValue, limit, ariaLabel }) {
+    mount.innerHTML = '';
+    const clean = items.filter((it) => getValue(it) != null);
+    if (clean.length === 0) {
+      mount.appendChild(buildEmptyState({ title: 'No data points', message: 'This series returned no usable values.' }));
+      return;
+    }
+    const shown = clean.slice(0, limit || 12);
+    const maxVal = Math.max(...shown.map(getValue), 0) * 1.18 || 1;
+
+    const width = 640;
+    const rowHeight = 26;
+    const margin = { top: 8, right: 56, bottom: 8, left: 112 };
+    const innerH = shown.length * rowHeight;
+    const height = margin.top + innerH + margin.bottom;
+    const innerW = width - margin.left - margin.right;
+
+    const xFor = (v) => margin.left + (v / maxVal) * innerW;
+    const yFor = (i) => margin.top + i * rowHeight + rowHeight / 2;
+
+    const svg = svgEl('svg', {
+      viewBox: `0 0 ${width} ${height}`, width: '100%', height: 'auto', role: 'img',
+      'aria-label': ariaLabel || 'Ranked bar chart', class: 'usda-chart',
+    });
+
+    svg.appendChild(svgEl('line', { x1: margin.left, x2: margin.left, y1: margin.top, y2: height - margin.bottom, class: 'grid-line' }));
+
+    shown.forEach((item, i) => {
+      const value = getValue(item);
+      const barHeight = 16;
+      const label = svgEl('text', { x: margin.left - 8, y: yFor(i) + 4, class: 'axis-label', 'text-anchor': 'end' });
+      label.textContent = getLabel(item);
+      svg.appendChild(label);
+
+      const rect = svgEl('rect', {
+        x: margin.left, y: yFor(i) - barHeight / 2, width: Math.max(0, xFor(value) - margin.left), height: barHeight,
+        rx: 4, class: 'bar bar-accent',
+      });
+      const hit = svgEl('rect', { x: 0, y: yFor(i) - rowHeight / 2, width, height: rowHeight, fill: 'transparent' });
+      hit.addEventListener('pointermove', (evt) => {
+        rect.classList.add('bar-hover');
+        showTooltip(evt.clientX, evt.clientY, getLabel(item), [{ label: 'Value', value: formatValue(value), colorClass: 'key-accent' }]);
+      });
+      hit.addEventListener('pointerleave', () => {
+        rect.classList.remove('bar-hover');
+        hideTooltip();
+      });
+
+      const endLabel = svgEl('text', { x: xFor(value) + 6, y: yFor(i) + 4, class: 'end-label', 'text-anchor': 'start' });
+      endLabel.textContent = formatValue(value);
+
+      svg.append(rect, endLabel, hit);
+    });
+
+    mount.appendChild(svg);
+  }
+
   // ---- KPI stat tile ---------------------------------------------------------------
   function renderStatTile(container, { label, value, deltaText, deltaDirection, unavailable }) {
     const tile = document.createElement('div');
@@ -587,6 +645,7 @@
     renderSeasonalChart,
     renderTrendChart,
     renderBarChart,
+    renderRankedBarChart,
     renderStatTile,
     MONTHS,
   };
