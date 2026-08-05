@@ -1,9 +1,26 @@
 require('dotenv').config();
 
 const path = require('path');
+const readline = require('readline');
 const express = require('express');
-const AdmZip = require('adm-zip');
+const unzipper = require('unzipper');
 const cache = require('./lib/cache');
+
+function splitCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') inQuotes = !inQuotes;
+    else if (ch === ',' && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+    } else current += ch;
+  }
+  cells.push(current.trim());
+  return cells;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -80,11 +97,12 @@ app.get('/api/usda/debug-fas', async (req, res) => {
   res.json(results);
 });
 
-// TEMPORARY diagnostic route — step 1: check file sizes only, without
-// decompressing anything. A prior version decompressed and parsed every
-// entry immediately and OOM'd Render's free-tier 512MB limit. Reading just
-// the ZIP central directory (entry names + declared sizes) costs almost no
-// memory, and tells us whether the real content needs a streaming approach.
+// TEMPORARY diagnostic route — step 2. The exports CSV is 186MB
+// uncompressed (confirmed by step 1), far too large to decompress fully
+// into memory on a 512MB instance. This streams the decompression
+// (unzipper gives a per-entry readable stream; adm-zip could not) and
+// reads it line by line via readline, so memory use stays bounded to one
+// line + a handful of matched sample rows, never the whole file.
 app.get('/api/usda/debug-ers', async (req, res) => {
   const url = 'https://www.ers.usda.gov/media/5615/zip-file-contains-two-csv-files-one-with-export-data-and-one-with-import-data-files-include-monthly-and-annual-data-for-live-cattle-hogs-sheep-and-goats-as-well-as-beef-and-veal-pork-lamb-and-mutton-chicken-meat-turkey-meat-and-eggs.zip?v=40280';
 
@@ -98,17 +116,47 @@ app.get('/api/usda/debug-ers', async (req, res) => {
       return;
     }
     const buffer = Buffer.from(await resp.arrayBuffer());
-    const zip = new AdmZip(buffer);
-    const entries = zip.getEntries();
+    const directory = await unzipper.Open.buffer(buffer);
 
-    const entryInfo = entries.map((e) => ({
-      name: e.entryName,
-      isDirectory: e.isDirectory,
-      compressedSizeMB: (e.header.compressedSize / 1e6).toFixed(2),
-      uncompressedSizeMB: (e.header.size / 1e6).toFixed(2),
-    }));
+    const exportsEntry = directory.files.find((f) => /exports/i.test(f.path));
+    if (!exportsEntry) {
+      res.status(404).json({ error: 'No exports CSV found in zip', entryNames: directory.files.map((f) => f.path) });
+      return;
+    }
 
-    res.json({ zipSizeMB: (buffer.length / 1e6).toFixed(2), entries: entryInfo });
+    const rl = readline.createInterface({ input: exportsEntry.stream() });
+    let headers = null;
+    let commodityColIdx = -1;
+    let totalRows = 0;
+    let eggRowCount = 0;
+    const eggSamples = [];
+
+    for await (const line of rl) {
+      if (!line) continue;
+      if (!headers) {
+        headers = splitCsvLine(line);
+        commodityColIdx = headers.findIndex((h) => /commodity/i.test(h));
+        continue;
+      }
+      totalRows += 1;
+      if (commodityColIdx === -1) continue;
+      const cells = splitCsvLine(line);
+      if (cells[commodityColIdx] && /egg/i.test(cells[commodityColIdx])) {
+        eggRowCount += 1;
+        if (eggSamples.length < 5) {
+          eggSamples.push(headers.reduce((obj, h, idx) => ({ ...obj, [h]: cells[idx] }), {}));
+        }
+      }
+    }
+
+    res.json({
+      entry: exportsEntry.path,
+      headers,
+      commodityColumn: commodityColIdx !== -1 ? headers[commodityColIdx] : null,
+      totalRows,
+      eggRowCount,
+      eggSamples,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

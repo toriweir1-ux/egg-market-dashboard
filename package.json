@@ -11,8 +11,8 @@
     "verify:nass": "node scripts/verify-nass-series.js"
   },
   "dependencies": {
-    "adm-zip": "^0.6.0",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "unzipper": "^0.12.5"
   }
 }
