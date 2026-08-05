@@ -70,6 +70,79 @@ app.get('/api/usda/debug-fas', async (req, res) => {
   res.json(results);
 });
 
+// TEMPORARY diagnostic route — the ERS Livestock and Meat International
+// Trade Data comes as a ZIP of CSVs covering many commodities at once
+// (cattle, hogs, beef, pork, chicken, turkey, eggs...). Inspect the actual
+// entry names, headers, and egg-related rows before building the real
+// client, rather than guessing the column layout.
+app.get('/api/usda/debug-ers', async (req, res) => {
+  const AdmZip = require('adm-zip');
+  const url = 'https://www.ers.usda.gov/media/5615/zip-file-contains-two-csv-files-one-with-export-data-and-one-with-import-data-files-include-monthly-and-annual-data-for-live-cattle-hogs-sheep-and-goats-as-well-as-beef-and-veal-pork-lamb-and-mutton-chicken-meat-turkey-meat-and-eggs.zip?v=40280';
+
+  function splitCsvLine(line) {
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') inQuotes = !inQuotes;
+      else if (ch === ',' && !inQuotes) {
+        cells.push(current.trim());
+        current = '';
+      } else current += ch;
+    }
+    cells.push(current.trim());
+    return cells;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!resp.ok) {
+      res.status(502).json({ error: `ERS zip download failed: HTTP ${resp.status}` });
+      return;
+    }
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    const zip = new AdmZip(buffer);
+    const entries = zip.getEntries();
+
+    const result = { entryNames: entries.map((e) => e.entryName), entries: {} };
+
+    for (const entry of entries) {
+      if (entry.isDirectory) continue;
+      const text = entry.getData().toString('utf8');
+      const lines = text.replace(/\r\n/g, '\n').trim().split('\n');
+      if (lines.length < 2) continue;
+      const headers = splitCsvLine(lines[0]);
+      const commodityColIdx = headers.findIndex((h) => /commodity/i.test(h));
+
+      let eggRows = [];
+      if (commodityColIdx !== -1) {
+        for (let i = 1; i < lines.length && eggRows.length < 3; i++) {
+          const cells = splitCsvLine(lines[i]);
+          if (cells[commodityColIdx] && /egg/i.test(cells[commodityColIdx])) {
+            eggRows.push(headers.reduce((obj, h, idx) => ({ ...obj, [h]: cells[idx] }), {}));
+          }
+        }
+      }
+
+      result.entries[entry.entryName] = {
+        rowCount: lines.length - 1,
+        headers,
+        commodityColumn: commodityColIdx !== -1 ? headers[commodityColIdx] : null,
+        sampleFirstRow: headers.reduce((obj, h, idx) => ({ ...obj, [h]: splitCsvLine(lines[1])[idx] }), {}),
+        eggRowSamples: eggRows,
+      };
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/usda/refresh', async (req, res) => {
   try {
     await cache.refresh();
