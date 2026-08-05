@@ -1,14 +1,13 @@
 (function () {
   const {
     buildCard, buildInfoCard, buildTable, buildEmptyState,
-    renderSeasonalChart, renderTrendChart, renderBarChart, renderRankedBarChart, renderStatTile, MONTHS,
+    renderSeasonalChart, renderTrendChart, renderStatTile, MONTHS,
   } = window.UsdaCharts;
 
   const NASS_KEY_SIGNUP_URL = 'https://quickstats.nass.usda.gov/api';
   const NASS_SOURCE_URL = 'https://quickstats.nass.usda.gov/';
   const NASS_SOURCE_LABEL = 'USDA NASS Quick Stats';
   const APHIS_DASHBOARD_URL = 'https://www.aphis.usda.gov/livestock-poultry-disease/avian/avian-influenza/hpai-detections/commercial-backyard-flocks';
-  const APHIS_SOURCE_LABEL = 'USDA APHIS — HPAI Commercial & Backyard Flock Detections';
   const NASS_CHICKENS_AND_EGGS_REPORT_URL = 'https://www.nass.usda.gov/Surveys/Guide_to_NASS_Surveys/Chickens_and_Eggs/index.php';
 
   let state = null;
@@ -104,13 +103,6 @@
       items.push(p);
     }
 
-    if (state.avianInfluenza && state.avianInfluenza.error) {
-      const p = document.createElement('p');
-      p.style.margin = '4px 0';
-      p.append(`Avian influenza data is unavailable (${state.avianInfluenza.error}).`);
-      items.push(p);
-    }
-
     if (items.length === 0) {
       banner.hidden = true;
       return;
@@ -168,46 +160,6 @@
     return card;
   }
 
-  function buildBarCard({ title, subtitle, points, formatValue, valueColumnLabel, unavailableMessage }) {
-    const { card, chartMount, tableMount } = buildCard({
-      title, subtitle, sourceLabel: APHIS_SOURCE_LABEL, sourceHref: APHIS_DASHBOARD_URL,
-    });
-    if (!points || points.length === 0) {
-      chartMount.appendChild(buildEmptyState({
-        title: 'Data unavailable',
-        message: unavailableMessage || 'No data returned yet.',
-        actionLabel: "View APHIS's HPAI dashboard",
-        actionHref: APHIS_DASHBOARD_URL,
-      }));
-      return card;
-    }
-    renderBarChart(chartMount, { points, formatValue, formatDate: formatShortMonth, colorClass: 'bar-accent', ariaLabel: title });
-    const headers = ['Month', valueColumnLabel || 'Value'];
-    const rows = points.map((p) => [formatMonthLabel(p.date), p.value == null ? '—' : formatValue(p.value)]);
-    buildTable(tableMount, headers, rows);
-    return card;
-  }
-
-  function buildRankedBarCard({ title, subtitle, items, getLabel, getValue, formatValue, valueColumnLabel, limit, unavailableMessage }) {
-    const { card, chartMount, tableMount } = buildCard({
-      title, subtitle, sourceLabel: APHIS_SOURCE_LABEL, sourceHref: APHIS_DASHBOARD_URL,
-    });
-    if (!items || items.length === 0) {
-      chartMount.appendChild(buildEmptyState({
-        title: 'Data unavailable',
-        message: unavailableMessage || 'No data returned yet.',
-        actionLabel: "View APHIS's HPAI dashboard",
-        actionHref: APHIS_DASHBOARD_URL,
-      }));
-      return card;
-    }
-    renderRankedBarChart(chartMount, { items, getLabel, getValue, formatValue, limit, ariaLabel: title });
-    const headers = ['State', valueColumnLabel || 'Value'];
-    const rows = items.map((it) => [getLabel(it), formatValue(getValue(it))]);
-    buildTable(tableMount, headers, rows);
-    return card;
-  }
-
   // ---- section renderers --------------------------------------------------------
   function renderOverview() {
     const container = document.getElementById('overview-stats');
@@ -240,15 +192,6 @@
       deltaText: price && yoyText(price.yoy),
       deltaDirection: price && yoyDirection(price.yoy),
       unavailable: !price || !!price.error || !price.latest,
-    });
-
-    const avian = state.avianInfluenza;
-    const last12 = avian && !avian.error ? avian.monthly.slice(-12) : [];
-    const birdsAffected12mo = last12.reduce((sum, m) => sum + (m.birdsAffected || 0), 0);
-    renderStatTile(container, {
-      label: 'Birds Affected by HPAI (trailing 12 mo., approx.)',
-      value: last12.length ? formatCompact(birdsAffected12mo, 'birds') : null,
-      unavailable: !avian || !!avian.error || last12.length === 0,
     });
   }
 
@@ -299,39 +242,12 @@
   function renderAvianInfluenzaSection() {
     const container = document.getElementById('avian-influenza-charts');
     container.innerHTML = '';
-    const avian = state.avianInfluenza;
-    const monthly = avian && !avian.error ? avian.monthly : [];
-    const unavailableMessage = avian && avian.error ? avian.error : 'No data returned yet.';
-
-    container.appendChild(buildBarCard({
+    container.appendChild(buildInfoCard({
       title: 'HPAI Detections in Commercial & Backyard Flocks',
-      subtitle: 'Confirmed detections per month',
-      points: monthly.map((m) => ({ date: m.date, value: m.detections })),
-      formatValue: (v) => formatCompact(v),
-      valueColumnLabel: 'Detections',
-      unavailableMessage,
-    }));
-
-    container.appendChild(buildBarCard({
-      title: 'Birds Affected by HPAI',
-      subtitle: 'Estimated birds affected per month (approximate — USDA’s export rounds each detection to the nearest 100K)',
-      points: monthly.map((m) => ({ date: m.date, value: m.birdsAffected })),
-      formatValue: (v) => formatCompact(v, 'birds'),
-      valueColumnLabel: 'Birds affected (approx.)',
-      unavailableMessage,
-    }));
-
-    const byState = avian && !avian.error ? avian.byState : [];
-    container.appendChild(buildRankedBarCard({
-      title: 'HPAI Detections by State',
-      subtitle: 'Confirmed detections since February 2022, all-time total by state (top 15 shown — full ranking in the data table)',
-      items: byState,
-      getLabel: (it) => it.state,
-      getValue: (it) => it.detections,
-      formatValue: (v) => formatCompact(v),
-      valueColumnLabel: 'Detections',
-      limit: 15,
-      unavailableMessage,
+      subtitle: 'Confirmed detections, birds affected, and by-state breakdown',
+      message: "USDA APHIS doesn't offer a reliable machine-readable feed for this data — the underlying dashboard is periodically redesigned by USDA, which breaks any automated fetch without warning. View APHIS's own live dashboard for current detections, the by-state map, and trends.",
+      actionLabel: "View APHIS's HPAI dashboard",
+      actionHref: APHIS_DASHBOARD_URL,
     }));
   }
 

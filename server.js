@@ -70,23 +70,6 @@ app.get('/api/usda/debug-fas', async (req, res) => {
   res.json(results);
 });
 
-// TEMPORARY diagnostic route — the APHIS CSV export started returning rows
-// with no parseable "Confirmed Diagnosis" date, which used to work. Inspect
-// the actual current column headers and a sample row to see what changed.
-app.get('/api/usda/debug-aphis-csv', async (req, res) => {
-  try {
-    const aphis = require('./lib/aphisClient');
-    const rows = await aphis.fetchHpaiDetections();
-    res.json({
-      rowCount: rows.length,
-      headers: rows.length ? Object.keys(rows[0]) : [],
-      sampleRows: rows.slice(0, 3),
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.post('/api/usda/refresh', async (req, res) => {
   try {
     await cache.refresh();
