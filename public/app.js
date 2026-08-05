@@ -104,6 +104,13 @@
       items.push(p);
     }
 
+    if (state.avianInfluenza && state.avianInfluenza.error) {
+      const p = document.createElement('p');
+      p.style.margin = '4px 0';
+      p.append(`Avian influenza data is unavailable (${state.avianInfluenza.error}).`);
+      items.push(p);
+    }
+
     if (items.length === 0) {
       banner.hidden = true;
       return;
@@ -161,14 +168,14 @@
     return card;
   }
 
-  function buildBarCard({ title, subtitle, points, formatValue, valueColumnLabel }) {
+  function buildBarCard({ title, subtitle, points, formatValue, valueColumnLabel, unavailableMessage }) {
     const { card, chartMount, tableMount } = buildCard({
       title, subtitle, sourceLabel: APHIS_SOURCE_LABEL, sourceHref: APHIS_DASHBOARD_URL,
     });
     if (!points || points.length === 0) {
       chartMount.appendChild(buildEmptyState({
         title: 'Data unavailable',
-        message: 'No data returned yet.',
+        message: unavailableMessage || 'No data returned yet.',
         actionLabel: "View APHIS's HPAI dashboard",
         actionHref: APHIS_DASHBOARD_URL,
       }));
@@ -181,14 +188,14 @@
     return card;
   }
 
-  function buildRankedBarCard({ title, subtitle, items, getLabel, getValue, formatValue, valueColumnLabel, limit }) {
+  function buildRankedBarCard({ title, subtitle, items, getLabel, getValue, formatValue, valueColumnLabel, limit, unavailableMessage }) {
     const { card, chartMount, tableMount } = buildCard({
       title, subtitle, sourceLabel: APHIS_SOURCE_LABEL, sourceHref: APHIS_DASHBOARD_URL,
     });
     if (!items || items.length === 0) {
       chartMount.appendChild(buildEmptyState({
         title: 'Data unavailable',
-        message: 'No data returned yet.',
+        message: unavailableMessage || 'No data returned yet.',
         actionLabel: "View APHIS's HPAI dashboard",
         actionHref: APHIS_DASHBOARD_URL,
       }));
@@ -294,6 +301,7 @@
     container.innerHTML = '';
     const avian = state.avianInfluenza;
     const monthly = avian && !avian.error ? avian.monthly : [];
+    const unavailableMessage = avian && avian.error ? avian.error : 'No data returned yet.';
 
     container.appendChild(buildBarCard({
       title: 'HPAI Detections in Commercial & Backyard Flocks',
@@ -301,6 +309,7 @@
       points: monthly.map((m) => ({ date: m.date, value: m.detections })),
       formatValue: (v) => formatCompact(v),
       valueColumnLabel: 'Detections',
+      unavailableMessage,
     }));
 
     container.appendChild(buildBarCard({
@@ -309,6 +318,7 @@
       points: monthly.map((m) => ({ date: m.date, value: m.birdsAffected })),
       formatValue: (v) => formatCompact(v, 'birds'),
       valueColumnLabel: 'Birds affected (approx.)',
+      unavailableMessage,
     }));
 
     const byState = avian && !avian.error ? avian.byState : [];
@@ -321,6 +331,7 @@
       formatValue: (v) => formatCompact(v),
       valueColumnLabel: 'Detections',
       limit: 15,
+      unavailableMessage,
     }));
   }
 
